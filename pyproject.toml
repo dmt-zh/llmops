@@ -1,0 +1,90 @@
+[project]
+name = "llmops"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "datasets>=4.2.0",
+    "ddgs>=9.6.1",
+    "langchain-community>=0.3.31",
+    "langchain-huggingface>=0.3.1",
+    "langchain-openai>=0.3.35",
+    "langchain-qdrant>=0.2.1",
+    "langchain-text-splitters>=0.3.11",
+    "langgraph>=0.6.10",
+    "openai>=2.3.0",
+    "pydantic>=2.12.0",
+    "pydantic-settings>=2.11.0",
+    "pyyaml>=6.0.3",
+    "ruff>=0.14.0",
+    "sentence-transformers>=5.1.1",
+    "tiktoken>=0.12.0",
+    "torch>=2.7.1",
+]
+
+[tool.uv.sources]
+torch = { url = "https://download.pytorch.org/whl/cpu-cxx11-abi/torch-2.7.1%2Bcpu.cxx11.abi-cp312-cp312-linux_x86_64.whl" }
+
+[tool.ruff]
+line-length = 150
+cache-dir = "~/.cache/ruff"
+
+[tool.ruff.format]
+docstring-code-format = true
+docstring-code-line-length = 88
+quote-style = "single"
+
+[tool.ruff.lint]
+select = [
+  "B006",    # multiple-argument-default
+  "B012",    # jump-statement-in-finally
+  "B015",    # useless-comparison
+  "D209",    # new-line-after-last-paragraph
+  "D411",    # no-blank-line-before-section
+  "DTZ003",  # call-datetime-utcnow
+  "E",       # error
+  "F",       # Pyflakes
+  "C4",      # flake8-comprehensions
+  "I",       # isort
+  "ISC001",  # single-line-implicit-string-concatenation
+  "N804",    # invalid-first-argument-name-for-class-method
+  "PIE790",  # unnecessary-placeholder
+  "PLR0402", # manual-from-import
+  "PLR1714", # repeated-equality-comparison
+  "PLE1205", # logging-too-many-args
+  "PLW0602", # global-variable-not-assigned
+  "PLW1508", # invalid-envvar-default
+  "PYI024",  # collections-named-tuple
+  "RET504",  # unnecessary-assign
+  "RUF002",  # ambiguous-unicode-character-docstring
+  "RUF003",  # ambiguous-unicode-character-comment
+  "RUF010",  # explicit-f-string-type-conversion
+  "RUF013",  # implicit-optional
+  "RUF051",  # if-key-in-dict-del
+  "RUF100",  # unused-noqa
+  "S307",    # suspicious-eval-usage
+  "S324",    # hashlib-insecure-hash-function
+  "SIM101",  # duplicate-isinstance-call
+  "SIM108",  # if-else-block-instead-of-if-exp
+  "SIM114",  # if-with-same-arms
+  "SIM115",  # open-file-with-context-handler
+  "SIM210",  # if-expr-with-true-false
+  "SIM910",  # dict-get-with-none-default
+  "T20",     # flake8-print
+  "TID251",  # banned-api
+  "TID252",  # relative-import
+  "TRY203",  # useless-try-except
+  "UP004",   # useless-object-inheritance
+  "UP006",   # non-pep585-annotation
+  "UP007",   # non-pep604-annotation-union
+  "UP008",   # super-call-with-parameters
+  "UP011",   # lru-cache-without-parameters
+  "UP012",   # unnecessary-encode-utf8
+  "UP015",   # redundant-open-modes
+  "UP030",   # format-literals
+  "UP031",   # printf-string-format
+  "UP034",   # extraneous-parenthesis
+  "UP045",   # non-pep604-annotation-optional
+  "W",       # warning
+]
