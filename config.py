@@ -85,5 +85,5 @@ class AppSettings(BaseSettings):
     )
     RECURSION_LIMIT: int = Field(
         default=10,
-        description='Maximum number of times a call can recurse.', 
+        description='Maximum number of times a call can recurse.',
     )

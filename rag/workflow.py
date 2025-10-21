@@ -1,9 +1,7 @@
 import logging
-import uuid
-
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 from ddgs import DDGS
 from langchain_core.documents import Document
@@ -11,9 +9,8 @@ from langchain_qdrant import QdrantVectorStore
 from langgraph.graph import END, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from pydantic_settings import BaseSettings
-from typing import Any, TypedDict
-from .evaluation import EvaluationChains
 
+from .evaluation import EvaluationChains
 
 ##############################################################################################
 
@@ -28,11 +25,11 @@ class State(TypedDict):
 
     question: str
     solution: str
-    online_search: bool
-    documents: Sequence[str]
+    web_search: bool
+    documents: Sequence[Document]
+    solution_evaluation: float | int
+    question_evaluation: float | int
     document_evaluations: Sequence[Mapping[str, Any]]
-    document_relevance_score: Sequence[Mapping[str, Any]]
-    question_relevance_score: Sequence[Mapping[str, Any]]
 
 ##############################################################################################
 
@@ -47,7 +44,6 @@ class RAGWorkflow:
 
     def __init__(self, settings: BaseSettings, vector_store: QdrantVectorStore) -> None:
         self._chains = EvaluationChains(settings)
-        self._k_search_results = settings.K_SEARCH_RESULTS
         self._retriever = vector_store.get_retriever
         self._settings = settings
         self._graph = self._buid_graph()
@@ -75,7 +71,7 @@ class RAGWorkflow:
         )
         graph_builder.add_conditional_edges(
             'Generate Answer',
-            self._check_hallucinations,
+            self._check_solution,
             {
                 'Hallucinations detected': 'Generate Answer',
                 'Answers Question': END,
@@ -106,14 +102,14 @@ class RAGWorkflow:
             return {'documents': documents, 'question': question}
         except Exception as err:
             logging.warning(f'Error retrieving documents: {err}')
-            return {'documents': [], 'question': question, 'online_search': True}
+            return {'documents': [], 'question': question, 'web_search': True}
 
     ##########################################################################################
 
     def _evaluate(self, state: State) -> Mapping[str, Any]:
         """Filter documents based on their relevance to the question."""
 
-        print("GRAPH STATE: Grade Documents")
+        # print("GRAPH STATE: Grade Documents")
         question = state.get('question', [])
         documents = state.get('documents', [])
         filtered_documents = []
@@ -130,9 +126,17 @@ class RAGWorkflow:
         return {
             'documents': filtered_documents,
             'question': question,
-            'online_search': (len(filtered_documents) / len(documents)) < 0.7,
+            'web_search': (len(filtered_documents) / len(documents)) < 0.7,
             'document_evaluations': document_evaluations,
         }
+
+    ##########################################################################################
+
+    def _retrieved_docs_relevant(self, state: State):
+        """Determine whether retrieved documents are relevant, if not trigger online searching."""
+
+        web_search = state.get('web_search', False)
+        return 'Search Online' if web_search else 'Generate Answer'
 
     ##########################################################################################
 
@@ -143,58 +147,19 @@ class RAGWorkflow:
         question = state['question']
         documents = state['documents']
 
-        search_results = DDGS().text(query=question, safesearch='off', max_results=self._k_search_results)
-        content = '\n\n'.join([element['body'].strip() for element in search_results])
-        results = Document(page_content=content)
+        search_results = DDGS().text(query=question, safesearch='off', max_results=self._settings.K_SEARCH_RESULTS)
+        web_documents = [Document(page_content=source['body'].strip()) for source in search_results]
 
         if documents is not None:
-            documents.append(results)
+            for web_doc in web_documents:
+                documents.append(web_doc)
         else:
-            documents = [results]
+            documents = web_documents
 
         return {
             'documents': documents,
             'question': question,
         }
-
-    ##########################################################################################
-
-    def _retrieved_docs_relevant(self, state: State):
-        """Determine whether retrieved documents are relevant, if not trigger online searching."""
-
-        online_search = state.get('online_search', False)
-        return 'Search Online' if online_search else 'Generate Answer'
-
-    ##########################################################################################
-
-    def _check_hallucinations(self, state: State) -> str:
-        """Check for hallucinations in the generated answers."""
-
-        # print("GRAPH STATE: Check Hallucinations") #FIXME:
-        question = state['question']
-        documents = state['documents']
-        solution = state['solution']
-
-        # print("Checking document relevance...") #FIXME:
-        document_relevance_score = self._chains.evaluate_document.invoke(
-            {'documents': documents, 'solution': solution},
-        )
-        if document_relevance_score.score:
-            # print("Checking question relevance...") #FIXME:
-            question_relevance_score = self._chains.evaluate_question.invoke(
-                {'question': question, 'solution': solution},
-            )
-            state['document_relevance_score'] = document_relevance_score
-            state['question_relevance_score'] = question_relevance_score
-
-            if question_relevance_score.score:
-                # print("ROUTING DECISION: Going to 'END' (Answers Question)") #FIXME:
-                return 'Answers Question'
-            # print("ROUTING DECISION: Going to 'Search Online' (Question not addressed)") #FIXME:
-            return 'Question not addressed'
-
-        state['document_relevance_score'] = document_relevance_score
-        return 'Hallucinations detected'
 
     ##########################################################################################
 
@@ -205,10 +170,40 @@ class RAGWorkflow:
         question = state['question']
         documents = state['documents']
 
-        solution = self._chains.solution_generator.invoke(
+        solution = self._chains.generate_answer.invoke(
             {'context': documents, 'question': question},
         )
-        return {'documents': documents, 'question': question, 'solution': solution}
+        return {'question': question, 'solution': solution}
+
+    ##########################################################################################
+
+    def _check_solution(self, state: State) -> str:
+        """Check for hallucinations in the generated answers."""
+
+        # print("GRAPH STATE: Check Hallucinations") #FIXME:
+        question = state['question']
+        documents = state['documents']
+        solution = state['solution']
+
+        # print("Checking solution relevance...") #FIXME:
+        solution_evaluation = self._chains.evaluate_solution.invoke(
+            {'documents': documents, 'solution': solution},
+        )
+        if solution_evaluation.score and solution_evaluation.relevance_score > 0.65:
+            # print("Checking question relevance...") #FIXME:
+            question_evaluation = self._chains.evaluate_question.invoke(
+                {'question': question, 'solution': solution},
+            )
+            state['solution_evaluation'] = solution_evaluation.relevance_score
+            state['question_evaluation'] = question_evaluation.relevance_score
+
+            if question_evaluation.score and question_evaluation.relevance_score > 0.65:
+                # print("ROUTING DECISION: Going to 'END' (Answers Question)") #FIXME:
+                return 'Answers Question'
+            # print("ROUTING DECISION: Going to 'Search Online' (Question not addressed)") #FIXME:
+            return 'Question not addressed'
+
+        return 'Hallucinations detected'
 
     ##########################################################################################
 
@@ -217,7 +212,9 @@ class RAGWorkflow:
 
         save_path = Path(__file__).parent.parent.joinpath('static/graph.png')
         mermaid_png = self._graph.get_graph().draw_mermaid_png(
-            frontmatter_config={'title': 'RAG Workflow'}
+            max_retries=5,
+            retry_delay=2.0,
+            frontmatter_config={'title': 'RAG Workflow'},
         )
         with open(save_path,'wb') as fout:
             fout.write(mermaid_png)

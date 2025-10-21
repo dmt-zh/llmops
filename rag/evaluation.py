@@ -1,15 +1,13 @@
-import yaml
-
 from collections.abc import Mapping
 from pathlib import Path
 
+import yaml
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables.base import RunnableSequence
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
-
 
 ##############################################################################################
 
@@ -52,7 +50,7 @@ class EvaluationChains:
         """Loading all evaluation prompts from a JSON configuration file."""
 
         working_dir = Path(__file__).resolve().parent
-        with open(working_dir.joinpath('prompts_2.yml')) as fin:
+        with open(working_dir.joinpath('prompts.yml')) as fin:
             return yaml.safe_load(fin)
 
     ##########################################################################################
@@ -78,10 +76,10 @@ class EvaluationChains:
     ##########################################################################################
 
     @property
-    def evaluate_document(self) -> RunnableSequence:
+    def evaluate_solution(self) -> RunnableSequence:
         """Evaluation the quality and relevance of an individual document."""
 
-        return self._configure_prompt('document_evaluation') | self._model.with_structured_output(EvaluationModel)
+        return self._configure_prompt('solution_evaluation') | self._model.with_structured_output(EvaluationModel)
 
     ##########################################################################################
 
@@ -94,7 +92,7 @@ class EvaluationChains:
     ##########################################################################################
 
     @property
-    def solution_generator(self) -> RunnableSequence:
+    def generate_answer(self) -> RunnableSequence:
         """Final response generated for user's question."""
 
         return self._configure_prompt('answer_generation') | self._model | StrOutputParser()

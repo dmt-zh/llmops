@@ -3,7 +3,6 @@
 from config import AppSettings
 from rag import QdrantStorage, RAGWorkflow
 
-
 settings = AppSettings()
 vectore_store = QdrantStorage(settings=settings)
 rag_workflow = RAGWorkflow(settings=settings, vector_store=vectore_store)

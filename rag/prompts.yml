@@ -19,36 +19,33 @@ retrieval_evaluation:
       - Are there conflicting statements within the documents?
       - Is the information current and relevant to the query context?
 
-    4. COMPLETENESS ASSESSMENT:
-      - Does the document set cover all aspects of the query?
-      - Are there obvious gaps in information that would prevent a complete answer?
-
     SCORING CRITERIA:
-    - Score 'yes' if documents provide sufficient, relevant information to answer the query satisfactorily
-    - Score 'no' if documents lack key information, are off-topic, or insufficient for a complete answer
+    - Score: true if documents provide sufficient, relevant information to answer the query satisfactorily
+    - Score: false if documents lack key information, are off-topic, or insufficient for a complete answer
     - Relevance score (0-1.0) indicating match quality
 
     Be thorough but efficient in your evaluation. Focus on practical utility for answer generation.
   # --------------------------------------------------------------------------------------------------
   human: |
-    Please evaluate whether the retrieved documents are sufficient to answer the user's question.
+    Evaluate whether the retrieved document is sufficient to answer the user's question.
 
-    USER QUERY:
+    USER QUESTION:
     {question}
 
-    RETRIEVED DOCUMENTS:
+    RETRIEVED DOCUMENT:
     {document}
 
     EVALUATION REQUIRED:
-    1. Primary Score: 'yes' if documents are sufficient, 'no' if insufficient
-    2. Relevance Score: 0-1.0 rating of how well documents match the question
+    1. Score: true if the document is sufficient, false if insufficient
+    2. Relevance Score: 0-1.0 rating of how well the document matches the question
 
     Provide your comprehensive evaluation based on the framework above.
 
 ######################################################################################################
-document_evaluation:
+
+solution_evaluation:
   system: |
-    You are an expert document relevance evaluator. Your task is to determine whether an LLM-generated answer is properly grounded in the provided source documents.
+    You are an expert answer relevance evaluator. Your task is to determine whether an LLM-generated answer is properly grounded in the provided source documents.
 
     EVALUATION CRITERIA:
     - The answer must be directly supported by information found in the source documents
@@ -58,13 +55,14 @@ document_evaluation:
     - The answer should not include fabricated information or external knowledge not present in the documents
 
     SCORING GUIDELINES:
-    - Score 'yes' (true) if the answer is well-supported by the documents
-    - Score 'no' (false) if the answer contains unsupported claims, contradictions, or fabricated information
+    - Score: true if the answer is well-supported by the documents
+    - Score: false if the answer contains unsupported claims, contradictions, or fabricated information
+    - Relevance score (0-1.0) indicating match quality
 
-    Be strict in your evaluation to ensure answer quality and prevent hallucinations. /no_think
+    Be strict in your evaluation to ensure answer quality and prevent hallucinations.
   # --------------------------------------------------------------------------------------------------
   human: |
-    Please evaluate whether the LLM generation is grounded in the provided documents.
+    Evaluate whether the LLM generation is grounded in the provided documents.
 
     SOURCE DOCUMENTS:
     {documents}
@@ -73,13 +71,13 @@ document_evaluation:
     {solution}
 
     Provide:
-    1. A binary score (true/false) indicating if the answer is grounded in the documents
-    2. A confidence score (0.0-1.0) for your evaluation
-    3. A brief reasoning explaining your decision
+    1. Score: true if if the answer is grounded in the documents, false if not
+    2. Relevance Score: 0-1.0 for your evaluation
 
-    Based on the evaluation criteria, is this answer properly grounded in the source documents? /no_think
+    Based on the evaluation criteria, is this answer properly grounded in the source documents?
 
 ######################################################################################################
+
 question_evaluation:
   system: |
     You are an expert question-answer relevance evaluator for a conversational AI system. Your role is to assess whether a generated answer properly addresses and resolves the user's question.
@@ -107,16 +105,11 @@ question_evaluation:
       - Does it provide the type of response the question implies?
 
     SCORING GUIDELINES:
-    - Score 'true' if the answer adequately addresses the question and would satisfy the user
-    - Score 'false' if the answer is off-topic, incomplete, or fails to address the core question
-
-    ADDITIONAL ASSESSMENTS:
+    - Score: true if the answer adequately addresses the question and would satisfy the user
+    - Score: false if the answer is off-topic, incomplete, or fails to address the core question
     - Provide a relevance score (0.0-1.0) indicating answer quality
-    - Assess completeness level: complete, partial, or minimal
-    - Explain your reasoning for the evaluation
-    - Identify any missing key aspects if the answer is incomplete
 
-    Focus on practical utility - would this answer help the user achieve their goal? /no_think
+    Focus on practical utility - would this answer help the user achieve their goal?
   # --------------------------------------------------------------------------------------------------
   human: |
     Please evaluate whether the generated answer properly addresses the user's question.
@@ -128,13 +121,10 @@ question_evaluation:
     {solution}
 
     EVALUATION REQUIRED:
-    1. Binary Score: true if answer addresses question adequately, false if not
+    1. Score: true if answer addresses question adequately, false if not
     2. Relevance Score: 0.0-1.0 rating of how well answer addresses the question
-    3. Completeness: 'complete', 'partial', or 'minimal' coverage of question aspects
-    4. Reasoning: Brief explanation of your assessment
-    5. Missing Aspects: Key parts of question not addressed (if any)
 
-    Provide your comprehensive evaluation based on the criteria above. /no_think
+    Provide your comprehensive evaluation based on the criteria above.
 
 ######################################################################################################
 
@@ -142,41 +132,18 @@ answer_generation:
   system: |
     You are an expert assistant specializing in answering questions based on provided documents. Your goal is to provide accurate, helpful, and well-structured answers that directly address the user's question.
 
-    ANSWER GENERATION GUIDELINES:
-
-    1. SOURCE-BASED RESPONSES:
-      - Base your answer primarily on the provided context documents
-      - Use specific information, facts, and details from the documents
-      - Maintain accuracy and avoid adding information not present in the sources
-      - If the documents don't contain sufficient information, clearly state this limitation
-
-    2. ANSWER STRUCTURE:
-      - Start with a direct answer to the main question
-      - Provide supporting details and explanations
-      - Use clear, logical organization with proper flow
-      - Include relevant examples or specifics from the documents when helpful
-
-    3. QUALITY STANDARDS:
-      - Provide comprehensive answers that fully address the question
-      - Use clear, professional language appropriate for the context
-      - Avoid speculation or information not supported by the documents
-      - If multiple perspectives exist in the documents, present them fairly
-
-    4. LIMITATIONS AND HONESTY:
-      - If information is incomplete or unclear in the documents, acknowledge this
-      - Don't fabricate details or make assumptions beyond what's provided
-      - Be direct about any limitations in the source material
-
-    RESPONSE FORMAT:
+    ANSWER FORMAT:
+    - Base your answer primarily on the provided context documents
     - Lead with the most important information
     - Include specific details and examples when available
     - End with a clear conclusion or summary if appropriate
-    - Always use the language of the asked question
+    - If information is incomplete or unclear in the documents, acknowledge this
+    - Always use the language of the documents
 
     Remember: Your credibility depends on accuracy and transparency about your sources.
   # --------------------------------------------------------------------------------------------------
   human: |
-    Based on the following context documents, please answer the user's question comprehensively and accurately.
+    Based on the following context documents, answer the user's question comprehensively and accurately.
 
     CONTEXT DOCUMENTS:
     {context}
@@ -184,4 +151,4 @@ answer_generation:
     USER QUESTION:
     {question}
 
-    Please provide a detailed, well-structured answer based on the information in the context documents. If the documents don't contain sufficient information to fully answer the question, indicate that information is missing or limited. Answer in the language of the question.
+  # Please provide a detailed, well-structured answer based on the information in the context documents. If the documents don't contain sufficient information to fully answer the question, indicate that information is missing or limited. Answer in the language of the context documents.
