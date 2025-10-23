@@ -34,13 +34,13 @@ EVAL_DATASET_PATH = CACHE_DIR.joinpath('eval_dataset.json')
 ##############################################################################################
 
 def download_and_create_datasets() -> None:
-    """Загрузка датасета из Hugging Face и формирование данных для приложения.
+    """Downloading the dataset from Hugging Face and generating data for the application.
 
-    Скачивается датасет для оценки RAG систем `galileo-ai/ragbench`.
-    В качестве основного датасета берется срез данных из `test` выборки.
+    The dataset for evaluating the RAG systems is `galileo-ai/ragbench`.
+    A subset of the `test` dataset is used as the main dataset.
 
-    Валидационный датасет формируется из основного датасета, чтобы валидационные данные
-    содержали ответы по тексту, который будет храниться в векторной базе данных.
+    The validation dataset is generated from the main dataset so that the validation data
+    contains text responses that will be stored in the vector database.
     """
 
     logging.info('Started to load data!')
@@ -48,7 +48,6 @@ def download_and_create_datasets() -> None:
     eval_data = []
     acc = 1
 
-    # Скачиваем датасет, берем документы содержащие больше 2500 символов
     for dataset_name, domain_name in DATASET_DOMAINS.items():
         raw_dataset = load_dataset(
             path='rungalileo/ragbench',
@@ -83,7 +82,6 @@ def download_and_create_datasets() -> None:
         else:
             eval_data.append({'domain_id': domain_name, 'messages': messages})
 
-    # Сохраняем данные в `json` файлы
     with (
         open(MAIN_DATASET_PATH, 'w', encoding='utf-8') as fout_main,
         open(EVAL_DATASET_PATH, 'w', encoding='utf-8') as fout_eval,
@@ -93,7 +91,6 @@ def download_and_create_datasets() -> None:
         logging.info(f'Loaded and saved main dataset in "{MAIN_DATASET_PATH}"')
         logging.info(f'Loaded and saved evaluation dataset in "{EVAL_DATASET_PATH}"')
 
-    # Удаляем временные и промежуточные файлы
     for path_ in CACHE_DIR.glob('*[!json][!py]'):
         if path_.is_dir():
             shutil.rmtree(path_)

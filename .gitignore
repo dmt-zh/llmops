@@ -13,5 +13,6 @@ uv.lock
 # Files
 data/*.json
 .env
+*.log
 RUNME.md
 run.py
