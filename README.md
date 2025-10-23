@@ -26,7 +26,7 @@
 
 ### Данные для RAG
 
-Ссылка на датасет: [galileo-ai/ragbench](https://huggingface.co/datasets/galileo-ai/ragbench)
+Ссылка на датасет: [galileo-ai/ragbench](https://huggingface.co/datasets/galileo-ai/ragbench)<br>
 Описание датасета: [RAGBench: Explainable Benchmark for Retrieval-Augmented Generation Systems](https://arxiv.org/html/2407.11005v1)
 
 <hr>
