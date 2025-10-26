@@ -1,8 +1,11 @@
 import gc
 import logging
+import re
+from collections.abc import Sequence
 from pathlib import Path
 
 import orjson
+from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore, RetrievalMode
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -47,6 +50,20 @@ def _configure_embedder(settings: BaseSettings) -> HuggingFaceEmbeddings:
 
 ##############################################################################################
 
+def _normalize_whitespaces(chunk: Sequence[str]) -> Sequence[str]:
+    """Replace any sequences of whitespace characters with a single space."""
+
+    return [re.sub(r'\s+', ' ', segment).strip() for segment in chunk]
+
+##############################################################################################
+
+def _sanitize_chunks(chunk: Sequence[Document]) -> Sequence[Document]:
+    """Remove documents with length less than 50 chars."""
+
+    return list(filter(lambda doc: len(doc.page_content) > 50, chunk))
+
+##############################################################################################
+
 class QdrantStorage:
     """
     Wrapper class for managing Qdrant vector store operations.
@@ -56,11 +73,12 @@ class QdrantStorage:
     LangChain integration.
     """
 
-    def __init__(self, settings: BaseSettings) -> None:
-        self._qdrant_client = QdrantClient(url=settings.QDRANT_URL)
-        self._text_splitter = _configure_splitter(settings)
-        self._vector_store = self._init_vector_store(settings)
+    def __init__(self, settings: BaseSettings, logger: logging.Logger) -> None:
+        self._logger = logger
         self._settings = settings
+        self._text_splitter = _configure_splitter(settings)
+        self._qdrant_client = QdrantClient(url=settings.QDRANT_URL)
+        self._vector_store = self._init_vector_store(settings)
 
     ##########################################################################################
 
@@ -68,22 +86,20 @@ class QdrantStorage:
         """
         Create or verify the existence of a Qdrant collection.
         Attempts to create a new collection with the specified configuration.
-        If the collection already exists, logs a warning and continues.
+        If the collection already exists, skips this step.
         """
 
+        collection = self._settings.COLLECTION_NAME
         try:
+            if self._qdrant_client.collection_exists(collection):
+                return None
             self._qdrant_client.create_collection(
-                collection_name=settings.COLLECTION_NAME,
+                collection_name=collection,
                 vectors_config=VectorParams(size=settings.EMBEDDING_SIZE, distance=Distance.COSINE)
             )
-            logging.info(f'Qdrant collection {settings.COLLECTION_NAME} is created!')
+            self._logger.info(f'Qdrant collection "{collection}" is created!')
         except UnexpectedResponse as err:
-            if f'`{settings.COLLECTION_NAME}` already exists' in str(err):
-                logging.warning(
-                    f'Qdrant collection `{settings.COLLECTION_NAME}` already exists. Skipping collection creation.'
-                )
-            else:
-                logging.error(f'Error initializing Qdrant client: {err}')
+            self._logger.error(f'Error initializing Qdrant client: {err}')
 
     ##########################################################################################
 
@@ -93,13 +109,16 @@ class QdrantStorage:
         and dense retrieval mode.
         """
 
-        logging.info('Initialized Qdrant storage!')
-        return QdrantVectorStore(
-            client=self._qdrant_client,
-            collection_name=settings.COLLECTION_NAME,
-            embedding=_configure_embedder(settings),
-            retrieval_mode=RetrievalMode.DENSE,
-        )
+        self._configure_vector_store(settings)
+        try:
+            return QdrantVectorStore(
+                client=self._qdrant_client,
+                collection_name=settings.COLLECTION_NAME,
+                embedding=_configure_embedder(settings),
+                retrieval_mode=RetrievalMode.DENSE,
+            )
+        except UnexpectedResponse as err:
+            self._logger.error(f'Error initializing Qdrant storage: {err}')
 
     ##########################################################################################
 
@@ -122,16 +141,24 @@ class QdrantStorage:
         The collection is created from documents loaded from JSON file.
         """
 
-        self._configure_vector_store(self._settings)
+        collection = self._settings.COLLECTION_NAME
+        collection_size = self._qdrant_client.count(collection).count
+        if collection_size:
+            self._logger.info(f'Collection "{collection}" already contains "{collection_size}" vectors.')
+
+        acc = 0
         curr_dir = Path(__file__).resolve().parent
         save_path = curr_dir.parent.joinpath('data/main_dataset.json')
         with open(save_path) as fin:
             documents = orjson.loads(fin.read())
-            for _, doc_content in tqdm(documents.items(), desc='Uploading docs to Qdrant', ncols=110, leave=False):
-                document_chunks = self._text_splitter.create_documents(doc_content)
-                self._vector_store.add_documents(document_chunks)
+            for document in tqdm(documents.values(), desc='Uploading docs to Qdrant', ncols=110, leave=False):
+                processed_doc = _normalize_whitespaces(document.get('body'))
+                document_chunks = self._text_splitter.create_documents(processed_doc)
+                cleaned_chunks = _sanitize_chunks(document_chunks)
+                self._vector_store.add_documents(cleaned_chunks)
+                acc += len(cleaned_chunks)
 
-            logging.info('Uploaded vectores to DB!')
+            self._logger.info(f'Uploaded "{acc}" vectors to Qdrant storage!')
             gc.collect()
 
     ##########################################################################################
@@ -144,7 +171,11 @@ class QdrantStorage:
         This is useful for resetting the vector store state.
         """
 
-        logging.info(f'Clearing Qdrant collection {self._settings.COLLECTION_NAME}...')
-        self.client.delete_collection(collection_name=self._settings.COLLECTION_NAME)
+        collection = self._settings.COLLECTION_NAME
+        if self._qdrant_client.collection_exists(collection):
+            self._logger.info(f'Clearing and removing Qdrant collection "{collection}"...')
+            self._qdrant_client.delete_collection(collection)
+        else:
+            self._logger.info(f'Collection "{collection}" does not exist in storage.')
 
 ##############################################################################################

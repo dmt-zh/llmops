@@ -6,9 +6,10 @@ dist/
 wheels/
 *.egg-info
 
+
 # Virtual environments
 .venv
-uv.lock
+
 
 # Files
 data/*.json

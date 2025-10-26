@@ -28,3 +28,5 @@ services-down: # Stop and remove local services
 lint-check: # Check code for linting issues without making changes
 	@uv run ruff check $(CHECK_DIRS)
 
+lint-fix: # Fix linting issues using ruff
+	@uv run ruff check --fix $(CHECK_DIRS)

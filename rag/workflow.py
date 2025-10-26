@@ -94,7 +94,6 @@ class RAGWorkflow:
     def _retrieve(self, state: State) -> Mapping[str, Sequence[str] | str | bool]:
         """Retrieve documents relevant to the user's question."""
 
-        # print("GRAPH STATE: Retrieve Documents") #FIXME:
         question = state.get('question')
 
         try:
@@ -109,7 +108,6 @@ class RAGWorkflow:
     def _evaluate(self, state: State) -> Mapping[str, Any]:
         """Filter documents based on their relevance to the question."""
 
-        # print("GRAPH STATE: Grade Documents")
         question = state.get('question', [])
         documents = state.get('documents', [])
         filtered_documents = []
@@ -143,7 +141,6 @@ class RAGWorkflow:
     def _search_online(self, state: State) -> Mapping[str, Any]:
         """Search online for additional context if needed."""
 
-        # print("GRAPH STATE: Search Online")  #FIXME:
         question = state['question']
         documents = state['documents']
 
@@ -166,7 +163,6 @@ class RAGWorkflow:
     def _generate_answer(self, state: State) -> Mapping[str, Any]:
         """Generate an answer based on the retrieved documents."""
 
-        # print("GRAPH STATE: Generate Answer") #FIXME:
         question = state['question']
         documents = state['documents']
 
@@ -180,17 +176,14 @@ class RAGWorkflow:
     def _check_solution(self, state: State) -> str:
         """Check for hallucinations in the generated answers."""
 
-        # print("GRAPH STATE: Check Hallucinations") #FIXME:
         question = state['question']
         documents = state['documents']
         solution = state['solution']
 
-        # print("Checking solution relevance...") #FIXME:
         solution_evaluation = self._chains.evaluate_solution.invoke(
             {'documents': documents, 'solution': solution},
         )
         if solution_evaluation.score and solution_evaluation.relevance_score > 0.65:
-            # print("Checking question relevance...") #FIXME:
             question_evaluation = self._chains.evaluate_question.invoke(
                 {'question': question, 'solution': solution},
             )
@@ -198,9 +191,7 @@ class RAGWorkflow:
             state['question_evaluation'] = question_evaluation.relevance_score
 
             if question_evaluation.score and question_evaluation.relevance_score > 0.65:
-                # print("ROUTING DECISION: Going to 'END' (Answers Question)") #FIXME:
                 return 'Answers Question'
-            # print("ROUTING DECISION: Going to 'Search Online' (Question not addressed)") #FIXME:
             return 'Question not addressed'
 
         return 'Hallucinations detected'

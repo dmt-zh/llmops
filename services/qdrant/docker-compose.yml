@@ -19,7 +19,7 @@ services:
 configs:
   qdrant_config:
     content: |
-      log_level: INFO
+      log_level: DEBUG
 
 
 networks:

@@ -36,8 +36,6 @@ line-length = 150
 cache-dir = "~/.cache/ruff"
 exclude = [
   "rag/prompts*",
-  "data/*",
-  "main.py",
 ]
 
 [tool.ruff.format]
