@@ -294,7 +294,7 @@ http://localhost:6333/dashboard#/collections/domain_knowledge/visualize
 
 Для детального понимания что происходит на каждом шаге работы RAG системы используется MLflow сервер для автоматического трекинга вызовов, происходящих в Langchain и OpenAI API.
 
-После выполнения команд `./main.py process-question -q 'вопрос_который_необходимо обработать'` и `./main.py process-question` можно проанализировать ход выполненя обработки вопросов на странице трекинга: http://localhost:5000/#/experiments/1/traces
+После выполнения команд `./main.py process-question -q 'вопрос_который_необходимо_обработать'` и `./main.py process-question` можно проанализировать ход выполненя обработки вопросов на странице трекинга: http://localhost:5000/#/experiments/1/traces
 <img src="./static/mlflow_experiments.png" width="900" height="300"/>
 
 Можно также детально ознакомится с графов выполнения по каждому отдельному запросу нажав на идентификатор нужного вопроса.
