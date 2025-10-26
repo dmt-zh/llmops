@@ -9,7 +9,7 @@
 - [SentenceTransformers](https://huggingface.co/sentence-transformers) — фреймворк для создания высокого качества эмбеддингов для текста
 
 Граф реализованной системы имеет следующий вид:
-<img src="graph.png" width="540" height="610"/>
+<img src="./static/graph.png" width="540" height="610"/>
 где основные узлы это:
 - `Retrieve Documents` — извлечение релевантных документов на основании вопроса пользователя
 - `Evaluate Documents` — оценка релевантности извлеченных документов
