@@ -333,7 +333,7 @@ http://localhost:6333/dashboard#/collections/domain_knowledge/visualize
 В резульате выполнения программы, на странице трекинга экспериментов (http://localhost:5000/#/experiments), появятся два эксперимента:
 - `Medical domain Traces` — запуск валидационного набора данных на медицинском домене<br>
 - `Medical domain Evaluation` — оценка каждого запроса по метрикам<br>
-<img src="mlflow_domain.png" width="650" height="180"/>
+<img src="./static/mlflow_domain.png" width="650" height="180"/>
 
 На странице `Medical domain Evaluation` будут отображены посчитанные метрики:
-<img src="mlflow_metrics.png" width="900" height="300"/>
+<img src="./static/mlflow_metrics.png" width="900" height="300"/>
