@@ -10,7 +10,7 @@ from langgraph.graph import END, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from pydantic_settings import BaseSettings
 
-from .evaluation import EvaluationChains
+from rag.evaluation import EvaluationChains
 
 ##############################################################################################
 
@@ -25,7 +25,9 @@ class State(TypedDict):
 
     question: str
     solution: str
+    reference: str | None
     web_search: bool
+    recursion_limit: int
     documents: Sequence[Document]
     solution_evaluation: float | int
     question_evaluation: float | int
@@ -165,20 +167,31 @@ class RAGWorkflow:
 
         question = state['question']
         documents = state['documents']
+        reference = state.get('reference')
+        recursion_limit = state.get('recursion_limit', 0) + 1
 
         solution = self._chains.generate_answer.invoke(
             {'context': documents, 'question': question},
         )
-        return {'question': question, 'solution': solution}
+        return {
+            'question': question,
+            'solution': solution,
+            'reference': reference,
+            'documents': [doc.page_content if isinstance(doc, Document) else doc for doc in documents],
+            'recursion_limit': recursion_limit,
+        }
 
     ##########################################################################################
 
     def _check_solution(self, state: State) -> str:
-        """Check for hallucinations in the generated answers."""
+        """Evaluate generated answers for completeness and hallucinations presence."""
 
         question = state['question']
         documents = state['documents']
         solution = state['solution']
+
+        if state.get('recursion_limit', 0) >= max(self._settings.RECURSION_LIMIT - 1, 1):
+            return 'Answers Question'
 
         solution_evaluation = self._chains.evaluate_solution.invoke(
             {'documents': documents, 'solution': solution},
@@ -202,7 +215,7 @@ class RAGWorkflow:
         """Drawing graph and saving its image to `static` folder."""
 
         save_path = Path(__file__).parent.parent.joinpath('static/graph.png')
-        mermaid_png = self._graph.get_graph().draw_mermaid_png(
+        mermaid_png = self._graph.get_graph(xray=5).draw_mermaid_png(
             max_retries=5,
             retry_delay=2.0,
             frontmatter_config={'title': 'RAG Workflow'},

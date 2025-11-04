@@ -1,7 +1,7 @@
 [project]
 name = "LLMOps"
 version = "0.1.0"
-description = "Add your description here"
+description = "Advanced RAG system."
 authors = [
     {name = "Dmitry Zhigalo"}
 ]
@@ -17,11 +17,12 @@ dependencies = [
     "langchain-qdrant>=0.2.1",
     "langchain-text-splitters>=0.3.11",
     "langgraph>=0.6.10",
-    "mlflow>=3.5.1",
+    "mlflow[genai]>=3.5.1",
     "openai>=2.3.0",
     "pydantic>=2.12.0",
     "pydantic-settings>=2.11.0",
     "pyyaml>=6.0.3",
+    "ragas>=0.3.1",
     "ruff>=0.14.0",
     "sentence-transformers>=5.1.1",
     "tiktoken>=0.12.0",
@@ -96,3 +97,6 @@ select = [
   "UP045",   # non-pep604-annotation-optional
   "W",       # warning
 ]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"

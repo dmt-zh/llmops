@@ -7,9 +7,11 @@
 - [Qdrant](https://github.com/qdrant/qdrant) — высокопроизводительная векторная база данных
 - [MLflow](https://github.com/mlflow/mlflow) — платформа для создания моделей  и AI/LLM приложений
 - [SentenceTransformers](https://huggingface.co/sentence-transformers) — фреймворк для создания высокого качества эмбеддингов для текста
+- [Ragas](https://docs.ragas.io/en/stable/getstarted/) — набор инструментов для оценки и оптимизации приложений, использующих LLM
 
 Граф реализованной системы имеет следующий вид:
 <img src="./static/graph.png" width="540" height="610"/>
+
 где основные узлы это:
 - `Retrieve Documents` — извлечение релевантных документов на основании вопроса пользователя
 - `Evaluate Documents` — оценка релевантности извлеченных документов
@@ -277,11 +279,11 @@ http://localhost:6333/dashboard#/collections/domain_knowledge/visualize
 
 **Обработка вопросов осуществляется с помощью команды:**
 ```sh
-./main.py process-question -q 'вопрос_который_необходимо обработать'
+./main.py process-question --q 'вопрос_который_необходимо обработать'
 ```
 <img src="./static/raq_question.png" width="900" height="70"/>
 
-Параметр `-q` необязательный. Если его не передавать, то вопросы будут считываться из файла `questions.txt`:
+Параметр `--q` необязательный. Если его не передавать, то вопросы будут считываться из файла `questions.txt`:
 ```sh
 ./main.py process-question
 ```
@@ -294,7 +296,7 @@ http://localhost:6333/dashboard#/collections/domain_knowledge/visualize
 
 Для детального понимания что происходит на каждом шаге работы RAG системы используется MLflow сервер для автоматического трекинга вызовов, происходящих в Langchain и OpenAI API.
 
-После выполнения команд `./main.py process-question -q 'вопрос_который_необходимо_обработать'` и `./main.py process-question` можно проанализировать ход выполненя обработки вопросов на странице трекинга: http://localhost:5000/#/experiments/1/traces
+После выполнения команд `./main.py process-question --q 'вопрос_который_необходимо_обработать'` и `./main.py process-question` можно проанализировать ход выполненя обработки вопросов на странице трекинга: http://localhost:5000/#/experiments/1/traces
 <img src="./static/mlflow_experiments.png" width="900" height="300"/>
 
 Можно также детально ознакомится с графов выполнения по каждому отдельному запросу нажав на идентификатор нужного вопроса.
@@ -306,3 +308,32 @@ http://localhost:6333/dashboard#/collections/domain_knowledge/visualize
 <img src="./static/mlflow_graph_chat.png" width="900" height="380"/>
 <hr>
 
+### Оценка качества системы
+
+Для оценки качества работы RAG системы используется валидационный набор данных, сформированных на этапе формирования данных. Валидационный датасет содержит 5 доменов (`medical`, `legal`, `finance`, `tech`, `general`), в каждом по 5 вопросов.
+
+В качестве метрик для оценки используются метрики из билиотеки [Ragas](https://docs.ragas.io/en/stable/getstarted/) — набор инструментов для оценки и оптимизации приложений, использующих LLM.
+
+В проекте испльзуются следующие метрики:
+- [ResponseRelevancy (answer_relevancy)](https://docs.ragas.io/en/stable/references/metrics/?h=responserelevancy#ragas.metrics.ResponseRelevancy) — oценивает релевантность ответа по отношению к заданному вопросу. Ответы, содержащие неполную, избыточную или ненужную информацию, штрафуются. Оценка может варьироваться от 0 до 1, где 1 — наивысший балл.
+- [ContextRelevance (context_relevance)](https://docs.ragas.io/en/stable/references/metrics/?h=contextrelevance#ragas.metrics.ContextRelevance) — оценка релевантности найденных документов, которая должна основываться на введенных пользователем данных. Оценка может варьироваться от 0 до 1, где 1 — наивысший балл.
+- [Faithfulness (faithfulness)](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/faithfulness/?h=faithfulness) — показатель оценивает, насколько фактическое содержание ответа соответствует извлеченному контексту. Он варьируется от 0 до 1, при этом более высокие баллы указывают на лучшую согласованность. Ответ считается достоверным, если все содержащиеся в нем утверждения могут быть подтверждены извлеченным контекстом.
+- [SemanticSimilarity (semantic_similarity)](https://docs.ragas.io/en/stable/references/metrics/?h=semanticsimilarity#ragas.metrics.SemanticSimilarity) — oценивается семантическое сходство эталонного ответа с сгенерированным ответом. Для количественной оценки семантического сходства используется модель [distiluse-base-multilingual-cased-v1](https://huggingface.co/sentence-transformers/distiluse-base-multilingual-cased-v1), конвертирующая сгенерированный и эталонный ответы в эмбеддинги, котрые сравниваются между собой по косинусному расстоянию.
+
+Запуск оценки качества осуществляется с помощью команды:
+```sh
+./main.py rag-evaluation --domain <domain>
+```
+
+Например, для оценки системы по медицинскому домену, необходимо выполнить следующую команду:
+```sh
+./main.py rag-evaluation --domain medical
+```
+
+В резульате выполнения программы, на странице трекинга экспериментов (http://localhost:5000/#/experiments), появятся два эксперимента:
+- `Medical domain Traces` — запуск валидационного набора данных на медицинском домене<br>
+- `Medical domain Evaluation` — оценка каждого запроса по метрикам<br>
+<img src="mlflow_domain.png" width="650" height="180"/>
+
+На странице `Medical domain Evaluation` будут отображены посчитанные метрики:
+<img src="mlflow_metrics.png" width="900" height="300"/>
