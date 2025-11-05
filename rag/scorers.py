@@ -47,6 +47,8 @@ def answer_relevancy(
     expectations: Mapping[str, Any],
     trace: Trace,
 ) -> float:
+    """Scores the relevancy of the answer according to the given question."""
+
     try:
         score = evaluate(
             dataset=EvaluationDataset.from_list(
@@ -78,6 +80,8 @@ def context_relevance(
     expectations: Mapping[str, Any],
     trace: Trace,
 ) -> float:
+    """Score the relevance of the retrieved contexts be based on the user input."""
+
     try:
         score = evaluate(
             dataset=EvaluationDataset.from_list(
@@ -109,6 +113,8 @@ def faithfulness(
     expectations: Mapping[str, Any],
     trace: Trace,
 ) -> float:
+    """The metric measures how factually consistent a response is with the retrieved context."""
+
     try:
         score = evaluate(
             dataset=EvaluationDataset.from_list(
@@ -140,6 +146,8 @@ def semantic_similarity(
     expectations: Mapping[str, Any],
     trace: Trace,
 ) -> float:
+    """Scores the semantic similarity of ground truth with generated answer."""
+
     try:
         score = evaluate(
             dataset=EvaluationDataset.from_list(

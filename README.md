@@ -86,12 +86,12 @@ cd && mkdir .llama.cpp && cd .llama.cpp
 
 Скачиваем последний релиз `llama.cpp` для Linux Ubuntu:
 ```sh
-wget https://github.com/ggml-org/llama.cpp/releases/download/b6708/llama-b6708-bin-ubuntu-x64.zip
+wget https://github.com/ggml-org/llama.cpp/releases/download/b6960/llama-b6960-bin-ubuntu-x64.zip
 ```
 
 Распаковываем zip архив и удаляем после распаковки:
 ```sh
-unzip llama-b6708-bin-ubuntu-x64.zip && rm llama-b6708-bin-ubuntu-x64.zip
+unzip llama-b6960-bin-ubuntu-x64.zip && rm llama-b6960-bin-ubuntu-x64.zip
 ```
 
 Для запуска из любой директории `llama.cpp` сервера созданим мягкую ссылку на исполняемую программу:
@@ -246,7 +246,9 @@ Commands:
   create-collection  Create a new Qdrant collection.
   create-datasets    Download and create datasets for RAG systems.
   delete-collection  Delete all data from the Qdrant collection.
+  draw-gpraph        Draw the graph and save its image to `static` folder.
   process-question   Run the Q&A processing workflow.
+  rag-evaluation     RAG evaluation on a specific domain.
 ```
 
 **Скачиваем данные и формируем основной и валидационный датасеты:**
@@ -274,6 +276,17 @@ http://localhost:6333/dashboard#/collections
 Посмотреть на кластеры эмбеддингов можно странице коллекции по ссылке в веб браузере:
 http://localhost:6333/dashboard#/collections/domain_knowledge/visualize
 <img src="./static/qdrant_visualize.png" width="900" height="400"/>
+
+#### Визуализация графа выполнения
+
+Что бы получить изображение графа выполнения необходимо выполнить команду:
+```sh
+./main.py draw-gpraph
+```
+Изображение графа будет сохранено в директори `./static/graph.png`
+
+<hr>
+
 
 #### Обработка вопросов
 

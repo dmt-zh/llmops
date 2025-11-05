@@ -173,7 +173,18 @@ def rag_evaluation(ctx: click.Context, domain: str) -> None:
         ],
     )
     logger.info('RAG evaluation is completed!')
-    # ./main.py rag-evaluation --domain medical
+
+##############################################################################################
+
+@click.command()
+@click.pass_context
+def draw_gpraph(ctx: click.Context, q: str | None = None) -> None:
+    """Draw the graph and save its image to `static` folder."""
+
+    settings = ctx.obj['config']
+    vectore_store = QdrantStorage(settings=settings, logger=ctx.obj['logger'])
+    rag_workflow = RAGWorkflow(settings=settings, vector_store=vectore_store)
+    rag_workflow.draw_gpraph()
 
 ##############################################################################################
 
@@ -182,6 +193,7 @@ main.add_command(create_collection)
 main.add_command(delete_collection)
 main.add_command(process_question)
 main.add_command(rag_evaluation)
+main.add_command(draw_gpraph)
 
 ##############################################################################################
 
