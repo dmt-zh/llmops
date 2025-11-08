@@ -1,29 +1,37 @@
+#####################################################################################################
+# general
+#####################################################################################################
+
 [project]
 name = "LLMOps"
 version = "0.1.0"
-description = "Advanced RAG system."
+description = "Advanced RAG system with LangGraph."
 authors = [
     {name = "Dmitry Zhigalo"}
 ]
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
+
+#####################################################################################################
+# dependencies
+#####################################################################################################
+
 dependencies = [
     "click>=8.3.0",
     "datasets>=4.2.0",
     "ddgs>=9.6.1",
-    "langchain-community>=0.3.31",
-    "langchain-huggingface>=0.3.1",
-    "langchain-openai>=0.3.35",
-    "langchain-qdrant>=0.2.1",
-    "langchain-text-splitters>=0.3.11",
-    "langgraph>=0.6.10",
-    "mlflow[genai]>=3.5.1",
-    "openai>=2.3.0",
+    "langchain-community>=0.4.0",
+    "langchain-huggingface>=1.0.0",
+    "langchain-openai>=1.0.0",
+    "langchain-qdrant>=1.1.0",
+    "langchain-text-splitters>=1.0.0",
+    "langgraph>=1.0.0",
+    "mlflow[genai]>=3.6.0",
+    "openai>=2.7.0",
     "pydantic>=2.12.0",
     "pydantic-settings>=2.11.0",
     "pyyaml>=6.0.3",
-    "ragas>=0.3.1",
-    "ruff>=0.14.0",
+    "ragas>=0.3.5",
     "sentence-transformers>=5.1.1",
     "tiktoken>=0.12.0",
     "torch>=2.7.1",
@@ -32,10 +40,25 @@ dependencies = [
 [tool.uv.sources]
 torch = { url = "https://download.pytorch.org/whl/cpu-cxx11-abi/torch-2.7.1%2Bcpu.cxx11.abi-cp312-cp312-linux_x86_64.whl" }
 
+[dependency-groups]
+lint = [
+    "isort>=7.0.0",
+    "poethepoet>=0.37.0",
+    "ruff>=0.12.10",
+]
+
+#####################################################################################################
+# ruff
+#####################################################################################################
+
 [tool.ruff]
 line-length = 150
+target-version = "py312"
 cache-dir = "~/.cache/ruff"
+preview = true
 exclude = [
+  ".git",
+  ".venv",
   "rag/prompts*",
 ]
 
@@ -46,57 +69,56 @@ quote-style = "single"
 
 [tool.ruff.lint]
 select = [
-  "B006",    # multiple-argument-default
-  "B012",    # jump-statement-in-finally
-  "B015",    # useless-comparison
-  "D209",    # new-line-after-last-paragraph
-  "D411",    # no-blank-line-before-section
-  "DTZ003",  # call-datetime-utcnow
-  "E",       # error
-  "F",       # Pyflakes
-  "C4",      # flake8-comprehensions
-  "I",       # isort
-  "ISC001",  # single-line-implicit-string-concatenation
-  "N804",    # invalid-first-argument-name-for-class-method
-  "PIE790",  # unnecessary-placeholder
-  "PLR0402", # manual-from-import
-  "PLR1714", # repeated-equality-comparison
-  "PLE1205", # logging-too-many-args
-  "PLW0602", # global-variable-not-assigned
-  "PLW1508", # invalid-envvar-default
-  "PYI024",  # collections-named-tuple
-  "RET504",  # unnecessary-assign
-  "RUF002",  # ambiguous-unicode-character-docstring
-  "RUF003",  # ambiguous-unicode-character-comment
-  "RUF010",  # explicit-f-string-type-conversion
-  "RUF013",  # implicit-optional
-  "RUF051",  # if-key-in-dict-del
-  "RUF100",  # unused-noqa
-  "S307",    # suspicious-eval-usage
-  "S324",    # hashlib-insecure-hash-function
-  "SIM101",  # duplicate-isinstance-call
-  "SIM108",  # if-else-block-instead-of-if-exp
-  "SIM114",  # if-with-same-arms
-  "SIM115",  # open-file-with-context-handler
-  "SIM210",  # if-expr-with-true-false
-  "SIM910",  # dict-get-with-none-default
-  "T20",     # flake8-print
-  "TID251",  # banned-api
-  "TID252",  # relative-import
-  "TRY203",  # useless-try-except
-  "UP004",   # useless-object-inheritance
-  "UP006",   # non-pep585-annotation
-  "UP007",   # non-pep604-annotation-union
-  "UP008",   # super-call-with-parameters
-  "UP011",   # lru-cache-without-parameters
-  "UP012",   # unnecessary-encode-utf8
-  "UP015",   # redundant-open-modes
-  "UP030",   # format-literals
-  "UP031",   # printf-string-format
-  "UP034",   # extraneous-parenthesis
-  "UP045",   # non-pep604-annotation-optional
-  "W",       # warning
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "COM",    # flake8-commas
+    "PIE",    # flake8-pie
+    "T20",    # flake8-print
+    "RET",    # flake8-return
+    "SIM",    # flake8-simplify
+    "N",      # pep8-naming
+    "N",      # pep8-naming
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "PL",     # pylint
+    "F",      # pyflakes
+    "UP",     # pyupgrade
+    "RUF",    # ruff-specific rules
+    "TRY",    # tryceratops
+    "D101",
+    "D103",
 ]
+allowed-confusables = ["›"]
+ignore = [
+    "E302", # blank-lines-top-level
+    "E305", # blank-lines-after-function-or-class
+]
+
+[tool.ruff.lint.per-file-ignores]
+"rag/workflow.py" = ["PLR6301"]  # Ignore method could be a function, class method, or static method
 
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
+
+#####################################################################################################
+# isort
+#####################################################################################################
+
+[tool.isort]
+py_version = 312
+line_length = 120
+combine_as_imports = true
+combine_star = true
+lexicographical = true
+src_paths = ['rag', 'data']
+remove_redundant_aliases = false
+include_trailing_comma = true
+color_output = true
+multi_line_output = 3
+
+#####################################################################################################
+# poe
+#####################################################################################################
+
+[tool.poe.tasks]
+isort = "isort --jobs -1 ."

@@ -50,7 +50,7 @@ class EvaluationChains:
         """Loading all evaluation prompts from a JSON configuration file."""
 
         working_dir = Path(__file__).resolve().parent
-        with open(working_dir.joinpath('prompts.yml')) as fin:
+        with open(working_dir.joinpath('prompts.yml'), encoding='utf-8') as fin:
             return yaml.safe_load(fin)
 
     ##########################################################################################

@@ -4,7 +4,6 @@ import gc
 import logging
 import sys
 from os import environ
-from typing import NoReturn
 
 import click
 import mlflow
@@ -23,7 +22,7 @@ from rag import (
 
 ##############################################################################################
 
-def setup_logger():
+def setup_logger() -> logging.Logger:
     """Create a logger with custom configuration."""
 
     logger = logging.getLogger(__name__)
@@ -43,11 +42,15 @@ def setup_logger():
 
 ##############################################################################################
 
-def validate_domain(ctx: click.Context, param: str, value: str) -> str | NoReturn:
+def validate_domain(ctx: click.Context, param: str, value: str) -> str:
+    """Validate domain names are correct."""
+
     valid_domains = ('medical', 'legal', 'finance', 'tech', 'general')
     if value in valid_domains:
         return value
-    raise click.BadParameter(f'Valid domains: [{" ".join(valid_domains)}]')
+
+    msg = f'Valid domains: [{" ".join(valid_domains)}]'
+    raise click.BadParameter(msg)
 
 ##############################################################################################
 
@@ -102,17 +105,17 @@ def process_question(ctx: click.Context, q: str | None = None) -> None:
         )
         click.echo(click.style(f'› {result["question"]}', fg='yellow'))
         click.echo(click.style(f'› {result["solution"]}\n', fg='bright_white'))
-        return None
+        return
 
     with open('questions.txt', encoding='utf-8') as fin:
         for question in fin:
-                result = rag_workflow.graph.invoke(
-                    input={'question': question.strip()},
-                    config={'recursion_limit': settings.RECURSION_LIMIT},
-                )
-                click.echo(click.style(f'› {result["question"]}', fg='bright_yellow'))
-                click.echo(click.style(f'› {result["solution"]}\n', fg='bright_white'))
-                gc.collect()
+            result = rag_workflow.graph.invoke(
+                input={'question': question.strip()},
+                config={'recursion_limit': settings.RECURSION_LIMIT},
+            )
+            click.echo(click.style(f'› {result["question"]}', fg='bright_yellow'))
+            click.echo(click.style(f'› {result["solution"]}\n', fg='bright_white'))
+            gc.collect()
 
 ##############################################################################################
 
@@ -139,7 +142,7 @@ def rag_evaluation(ctx: click.Context, domain: str) -> None:
     vectore_store = QdrantStorage(settings=settings, logger=logger)
     rag_workflow = RAGWorkflow(settings=settings, vector_store=vectore_store)
 
-    with open('data/eval_dataset.json') as fin:
+    with open('data/eval_dataset.json', encoding='utf-8') as fin:
         dataset = orjson.loads(fin.read())
         for batch in dataset:
             if batch.get('domain_id') == domain:
@@ -169,7 +172,7 @@ def rag_evaluation(ctx: click.Context, domain: str) -> None:
             answer_relevancy,
             context_relevance,
             faithfulness,
-            semantic_similarity
+            semantic_similarity,
         ],
     )
     logger.info('RAG evaluation is completed!')

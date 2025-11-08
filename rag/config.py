@@ -27,7 +27,7 @@ class AppSettings(BaseSettings):
     )
     LLM_BASE_URL: str = Field(
         default='http://127.0.0.1:8080',
-        description='Connection URI for the LLM server.'
+        description='Connection URI for the LLM server.',
     )
 
     # --- Cache storage Configuration ---

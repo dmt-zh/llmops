@@ -4,17 +4,11 @@ from typing import Any
 
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
-from mlflow.entities import Trace
 from mlflow.genai import scorer
 from ragas import EvaluationDataset, evaluate
 from ragas.embeddings import LangchainEmbeddingsWrapper
 from ragas.llms import LangchainLLMWrapper
-from ragas.metrics import (
-    ContextRelevance,
-    Faithfulness,
-    ResponseRelevancy,
-    SemanticSimilarity,
-)
+from ragas.metrics import ContextRelevance, Faithfulness, ResponseRelevancy, SemanticSimilarity
 from ragas.run_config import RunConfig
 
 from rag.config import AppSettings
@@ -41,12 +35,7 @@ embeddings_model = LangchainEmbeddingsWrapper(hf_embeddings)
 ##############################################################################################
 
 @scorer
-def answer_relevancy(
-    inputs: Mapping[str, Any],
-    outputs: str,
-    expectations: Mapping[str, Any],
-    trace: Trace,
-) -> float:
+def answer_relevancy(inputs: Mapping[str, Any], outputs: Mapping[str, Any]) -> float:
     """Scores the relevancy of the answer according to the given question."""
 
     try:
@@ -59,7 +48,7 @@ def answer_relevancy(
                         'response': outputs['solution'],
                         'reference': outputs['reference'],
                     },
-                ]
+                ],
             ),
             metrics=[ResponseRelevancy()],
             llm=evaluator_llm,
@@ -74,12 +63,7 @@ def answer_relevancy(
 ##############################################################################################
 
 @scorer
-def context_relevance(
-    inputs: Mapping[str, Any],
-    outputs: str,
-    expectations: Mapping[str, Any],
-    trace: Trace,
-) -> float:
+def context_relevance(inputs: Mapping[str, Any], outputs: Mapping[str, Any]) -> float:
     """Score the relevance of the retrieved contexts be based on the user input."""
 
     try:
@@ -92,7 +76,7 @@ def context_relevance(
                         'response': outputs['solution'],
                         'reference': outputs['reference'],
                     },
-                ]
+                ],
             ),
             metrics=[ContextRelevance(name='context_relevance')],
             llm=evaluator_llm,
@@ -107,12 +91,7 @@ def context_relevance(
 ##############################################################################################
 
 @scorer
-def faithfulness(
-    inputs: Mapping[str, Any],
-    outputs: str,
-    expectations: Mapping[str, Any],
-    trace: Trace,
-) -> float:
+def faithfulness(inputs: Mapping[str, Any], outputs: Mapping[str, Any]) -> float:
     """The metric measures how factually consistent a response is with the retrieved context."""
 
     try:
@@ -125,7 +104,7 @@ def faithfulness(
                         'response': outputs['solution'],
                         'reference': outputs['reference'],
                     },
-                ]
+                ],
             ),
             metrics=[Faithfulness()],
             llm=evaluator_llm,
@@ -140,12 +119,7 @@ def faithfulness(
 ##############################################################################################
 
 @scorer
-def semantic_similarity(
-    inputs: Mapping[str, Any],
-    outputs: str,
-    expectations: Mapping[str, Any],
-    trace: Trace,
-) -> float:
+def semantic_similarity(inputs: Mapping[str, Any], outputs: Mapping[str, Any]) -> float:
     """Scores the semantic similarity of ground truth with generated answer."""
 
     try:
@@ -158,7 +132,7 @@ def semantic_similarity(
                         'response': outputs['solution'],
                         'reference': outputs['reference'],
                     },
-                ]
+                ],
             ),
             metrics=[SemanticSimilarity()],
             llm=evaluator_llm,

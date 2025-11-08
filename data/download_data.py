@@ -21,6 +21,7 @@ DATASET_DOMAINS = {
 }
 MAIN_DATASET_PATH = CACHE_DIR.joinpath('main_dataset.json')
 EVAL_DATASET_PATH = CACHE_DIR.joinpath('eval_dataset.json')
+TEXT_LENGTH = 2500
 
 ##############################################################################################
 
@@ -52,7 +53,7 @@ def create_datasets(ctx: click.Context) -> None:
             split='test',
             cache_dir=CACHE_DIR,
         )
-        filtered_data = raw_dataset.filter(lambda example: bool(example['adherence_score']) and len(''.join(example['documents'])) > 2500)
+        filtered_data = raw_dataset.filter(lambda example: bool(example['adherence_score']) and len(''.join(example['documents'])) > TEXT_LENGTH)
         sample_ids = random.sample(range(len(filtered_data)), k=30)
         main_samples = filtered_data.select(sample_ids)
 
@@ -76,7 +77,7 @@ def create_datasets(ctx: click.Context) -> None:
             if domain_name in existing_domains:
                 for samples in eval_data:
                     if samples.get('domain_id') == domain_name:
-                        samples['messages'] = samples['messages'] + messages
+                        samples['messages'] += samples['messages']
                         break
             else:
                 eval_data.append({'domain_id': domain_name, 'messages': messages})

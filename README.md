@@ -171,7 +171,12 @@ git clone https://github.com/dmt-zh/llmops.git && cd llmops
 
 Создаем виртуальное окружение и устанавливаем зависимости:
 ```sh
-uv sync
+uv sync --locked
+```
+
+Для установки дополнительных зависимостей проверки кода (линтеров):
+```sh
+uv sync --group lint
 ```
 
 Создаем `.env` файл на основании файла `.env.example`:
@@ -276,6 +281,7 @@ http://localhost:6333/dashboard#/collections
 Посмотреть на кластеры эмбеддингов можно странице коллекции по ссылке в веб браузере:
 http://localhost:6333/dashboard#/collections/domain_knowledge/visualize
 <img src="./static/qdrant_visualize.png" width="900" height="400"/>
+<hr>
 
 #### Визуализация графа выполнения
 

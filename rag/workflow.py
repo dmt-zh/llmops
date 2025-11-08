@@ -100,10 +100,11 @@ class RAGWorkflow:
 
         try:
             documents = self._retriever.invoke(question)
-            return {'documents': documents, 'question': question}
         except Exception as err:
             logging.warning(f'Error retrieving documents: {err}')
             return {'documents': [], 'question': question, 'web_search': True}
+        else:
+            return {'documents': documents, 'question': question}
 
     ##########################################################################################
 
@@ -114,19 +115,21 @@ class RAGWorkflow:
         documents = state.get('documents', [])
         filtered_documents = []
         document_evaluations = []
+        min_threshold = 0.75
+        total_score = 0.7
 
         for document in documents:
             agent_response = self._chains.evaluate_retrieved_docs.invoke(
                 {'question': question, 'document': document.page_content},
             )
             document_evaluations.append(agent_response)
-            if agent_response and agent_response.relevance_score >= 0.75:
+            if agent_response and agent_response.relevance_score >= min_threshold:
                 filtered_documents.append(document)
 
         return {
             'documents': filtered_documents,
             'question': question,
-            'web_search': (len(filtered_documents) / len(documents)) < 0.7,
+            'web_search': (len(filtered_documents) / len(documents)) < total_score,
             'document_evaluations': document_evaluations,
         }
 
@@ -189,21 +192,23 @@ class RAGWorkflow:
         question = state['question']
         documents = state['documents']
         solution = state['solution']
+        min_threshold = 0.65
+        nodes_number = 4
 
-        if state.get('recursion_limit', 0) >= max(self._settings.RECURSION_LIMIT - 1, 1):
+        if state.get('recursion_limit', 0) >= max(self._settings.RECURSION_LIMIT - nodes_number, nodes_number):
             return 'Answers Question'
 
         solution_evaluation = self._chains.evaluate_solution.invoke(
             {'documents': documents, 'solution': solution},
         )
-        if solution_evaluation.score and solution_evaluation.relevance_score > 0.65:
+        if solution_evaluation.score and solution_evaluation.relevance_score > min_threshold:
             question_evaluation = self._chains.evaluate_question.invoke(
                 {'question': question, 'solution': solution},
             )
             state['solution_evaluation'] = solution_evaluation.relevance_score
             state['question_evaluation'] = question_evaluation.relevance_score
 
-            if question_evaluation.score and question_evaluation.relevance_score > 0.65:
+            if question_evaluation.score and question_evaluation.relevance_score > min_threshold:
                 return 'Answers Question'
             return 'Question not addressed'
 
@@ -220,7 +225,7 @@ class RAGWorkflow:
             retry_delay=2.0,
             frontmatter_config={'title': 'RAG Workflow'},
         )
-        with open(save_path,'wb') as fout:
+        with open(save_path, 'wb') as fout:
             fout.write(mermaid_png)
 
 ##############################################################################################

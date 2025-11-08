@@ -60,7 +60,8 @@ def _normalize_whitespaces(chunk: Sequence[str]) -> Sequence[str]:
 def _sanitize_chunks(chunk: Sequence[Document]) -> Sequence[Document]:
     """Remove documents with length less than 50 chars."""
 
-    return list(filter(lambda doc: len(doc.page_content) > 50, chunk))
+    char_length = 50
+    return list(filter(lambda doc: len(doc.page_content) > char_length, chunk))
 
 ##############################################################################################
 
@@ -92,14 +93,14 @@ class QdrantStorage:
         collection = self._settings.COLLECTION_NAME
         try:
             if self._qdrant_client.collection_exists(collection):
-                return None
+                return
             self._qdrant_client.create_collection(
                 collection_name=collection,
-                vectors_config=VectorParams(size=settings.EMBEDDING_SIZE, distance=Distance.COSINE)
+                vectors_config=VectorParams(size=settings.EMBEDDING_SIZE, distance=Distance.COSINE),
             )
             self._logger.info(f'Qdrant collection "{collection}" is created!')
-        except UnexpectedResponse as err:
-            self._logger.error(f'Error initializing Qdrant client: {err}')
+        except UnexpectedResponse:
+            self._logger.exception('Error initializing Qdrant client')
 
     ##########################################################################################
 
@@ -117,8 +118,8 @@ class QdrantStorage:
                 embedding=_configure_embedder(settings),
                 retrieval_mode=RetrievalMode.DENSE,
             )
-        except UnexpectedResponse as err:
-            self._logger.error(f'Error initializing Qdrant storage: {err}')
+        except UnexpectedResponse:
+            self._logger.exception('Error initializing Qdrant storage')
 
     ##########################################################################################
 
@@ -149,7 +150,7 @@ class QdrantStorage:
         acc = 0
         curr_dir = Path(__file__).resolve().parent
         save_path = curr_dir.parent.joinpath('data/main_dataset.json')
-        with open(save_path) as fin:
+        with open(save_path, encoding='utf-8') as fin:
             documents = orjson.loads(fin.read())
             for document in tqdm(documents.values(), desc='Uploading docs to Qdrant', ncols=110, leave=False):
                 processed_doc = _normalize_whitespaces(document.get('body'))
